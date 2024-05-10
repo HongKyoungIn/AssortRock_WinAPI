@@ -172,9 +172,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				g_tArea.bStart = true;
 				g_tArea.ptStart.x = lParam & 0x0000ffff;
+				g_tArea.ptStart.y = lParam >> 16;
+
+				// InvalidateRect 함수는 강제로 WM_PAINT 메시지를 호출해주는 함수이다.
+				// 1번 인자는 윈도우 핸들이 들어간다.
+				// 2번 인자는 초기화할 영역이 들어간다.
+				// 2번 인자에 NULL을 넣어줄 경우 전체 화면을 대상으로 갱신한다.
+				// 3번 인자는 True일 경우 현재 화면을 지우고 갱신한다.
+				// Flase일 경우 안 지우고 갱신한다.
+				InvalidateRect(hWnd, NULL, TRUE);
 			}
+			break;
+			// 마우스가 움직일 때 들어오는 메시지이다.
+		case WM_MOUSEMOVE:
+			if(g_tArea.bStart)
+			{
+				g_tArea.ptEnd.x = lParam & 0x0000ffff;
+				g_tArea.ptEnd.y = lParam >> 16;
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
+			break;
 		}
 
+		// 마우스 왼쪽 버튼을 누르다가 뗐을 때 발생하는 메세지이다.
+		case WM_LBUTTONUP:
+			if(g_tArea.bStart)
+			{
+				g_tArea.bStart = false;
+				g_tArea.ptEnd.x = lParam & 0x0000ffff;
+				g_tArea.ptEnd.y = lParam >> 16;
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
 		// 키가 눌러졌을 때 들어오는 메시지
 		case WM_KEYDOWN:
 		{
@@ -197,6 +225,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			TextOut(hdc, 150, 50, TEXT("win32"), 5);
 			TextOut(hdc, 250, 50, TEXT("win32"), 5);
 
+			TCHAR strMouse[64] = {};
+			// wsprintf : 유니코드 문자열을 만들어주는 함수이다.
+			wsprintf(strMouse, TEXT("Start = x : %d y : %d"), g_tArea.ptStart.x, g_tArea.ptStart.y);
+
+			// lstrlen : 유니코드 문자열의 길이를 구해주는 함수이다.
+			TextOut(hdc, 600, 30, strMouse, lstrlen(strMouse));
+
 			// 사각형
 			Rectangle(hdc, 100, 100, 200, 200);
 
@@ -210,6 +245,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			MoveToEx(hdc, 100, 400, NULL);
 			LineTo(hdc, 200, 500);
+
+			if(g_tArea.bStart)
+			{
+				Rectangle(hdc, g_tArea.ptStart.x, g_tArea.ptStart.y, g_tArea.ptEnd.x, g_tArea.ptEnd.y);
+			}
 
 			EndPaint(hWnd, &ps);
 		}
